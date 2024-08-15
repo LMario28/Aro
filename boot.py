@@ -31,6 +31,7 @@ import BlynkLib     # https://github.com/vshymanskyy/blynk-library-python/blob/m
 from BlynkTimer_lmms import BlynkTimer
 import network
 from ota_lmms import OTAUpdater
+import random
 
 #///////////////////////////////////////////////////////////////////////////////
 #/                               CONSTANTES                                   //
@@ -122,7 +123,6 @@ def seleccionarMejorRedWiFiDisponible():
 #     print()
 
   rssiMasFuerte = 999
-  print("Red disponibles:",redesWiFiDisponibles)
   for redWiFi in redesWiFiDisponibles:
     #print ("> " + str(redWiFi[0],"utf-8"))
     #print ("> " + str(redWiFi[3]))
@@ -141,6 +141,17 @@ def seleccionarMejorRedWiFiDisponible():
       if rssi<rssiMasFuerte:
         rssiMasFuerte = rssi
     print("Mejor red disponible:",redActiva,"|",SSID,"|",PASSWD)
+
+#-------------------------------------------------------------------------------
+def actualizarSketch():
+#-------------------------------------------------------------------------------
+  global SSID
+  global PASSWD
+
+  firmware_url = "https://raw.githubusercontent.com/LMario28/Aro/"
+
+  ota_updater = OTAUpdater(SSID, PASSWD, firmware_url, "boot.py")
+  ota_updater.download_and_install_update_if_available()
 
 #-------------------------------------------------------------------------------
 def desplegarMensajeVisual(tipLla):
@@ -233,31 +244,55 @@ def desplegarHoraSegundo():
   pixels[ledSegundoActual] = (255,255,0)
 
 #-------------------------------------------------------------------------------
-def actualizarSketch():
+def bandera():
 #-------------------------------------------------------------------------------
-  global SSID
-  global PASSWD
+  pixels.fill((0,0,0))
 
-  firmware_url = "https://raw.githubusercontent.com/LMario28/Aro/"
+# Semicírculo  izquierdo (VERDE)
+  for i in range (104,173):     # [104,172]
+    pixels[i] = (0,70,0)
 
-  ota_updater = OTAUpdater(SSID, PASSWD, firmware_url, "boot.py")
-  ota_updater.download_and_install_update_if_available()
+  # Línea vertical izquierda
+  for i in range (183,237):     # [183,236]
+    pixels[i] = (0,70,0)
+
+  # Semisemicírculo superior izquierdo (BLANCO)
+  for i in range (172,183):     # [172,182]
+    pixels[i] = (128,128,128)
+
+  # Semisemicírculo superior derecho (BLANCO)
+  for i in range (0,11):        # [0,10]
+    pixels[i] = (128,128,128)
+
+  # Semicírculo inferior (BLANCO)
+  for i in range (79,104):      # [79,103]
+    pixels[i] = (128,128,128)
+
+  # Línea vertical Derecha (ROJO)
+  for i in range (237,291):     # [237,290]
+    pixels[i] = (200,0,0)
+
+  # Semicírculo derecho (ROJO)
+  for i in range (11,80):       # [11,79]
+    pixels[i] = (200,0,0)
+
+  pixels.write()
 
 #///////////////////////////////////////////////////////////////////////////////
 #/ PROCESO   PROCESO   PROCESO   PROCESO   PROCESO   PROCESO   PROCESO        //
 #///////////////////////////////////////////////////////////////////////////////
-seleccionarMejorRedWiFiDisponible()
+#seleccionarMejorRedWiFiDisponible()
 
+seleccionarMejorRedWiFiDisponible()
 print("Connecting to WiFi network '{}'".format(SSID))
 wifi = network.WLAN(network.STA_IF)
 wifi.active(True)
 wifi.connect(SSID,PASSWD)
 while not wifi.isconnected():
-  desplegarMensajeVisual(1)
   time.sleep(5)
   print('WiFi connect retry ...')
-desplegarMensajeVisual(2)
 print('WiFi IP:', wifi.ifconfig()[0])
+actualizarSketch()
 
 print("Connecting to Blynk server...")
 blynk = BlynkLib.Blynk(BLYNK_AUTH)
@@ -291,7 +326,6 @@ def on_utc(value):
     # Ajuste por zona
     ts += 3600 * ZONA_MEXICO
     tiempoLocal = time.localtime(ts)
-    print(tiempoLocal)
     # Año, mes (1-12), día del mes (1-31), hora (0-23), minuto (0-59), segundo (0-59), día de
     # la semana (0-6 de lunes a domingo), día de año (1-366)
     # SINCRONIZACIÓN DEL RELOJ INTERNO E IMPRESIÓN DE FECHA Y HORA
@@ -315,17 +349,70 @@ def on_utc(value):
 #///////////////////////////////////////////////////////////////////////////////
 #/                                   TIMERS
 #///////////////////////////////////////////////////////////////////////////////
-timer.set_interval(1,actualizarHora)
-timer.set_interval(60,actualizarSketch)
+if (RTC().datetime()[1]!=9):
+  timerReloj=timer.set_interval(1,actualizarHora)
+#timer.set_interval(60,actualizarSketch)
 #///////////////////////////////////////////////////////////////////////////////
 #/                                FIN DE TIMERS
 #///////////////////////////////////////////////////////////////////////////////
+
+diaInicial=RTC().datetime()[2]
+opcionSeleccionadaAzar=0
+random.seed()
+banderaAnimacionEstablecida=False
+banderaReloj = False
 
 # CICLO INFINITO EN ESPERA POR EVENTOS
 while banderaSalida==False:
   try:
     blynk.run()
     timer.run()
+
+    # Posiciones en RTC(): 0. Año; 1: Mes; 2: Día; 4: Hora; 5: Minuto; 6: Segundo
+    if (RTC().datetime()[2]!=diaInicial):
+      banderaAnimacionEstablecida=false
+      opcionSeleccionadaAzar=0
+      diaInicial = RTC().datetime()[2]
+
+    if (RTC().datetime()[1]==9):
+      if (RTC().datetime()[5]%5!=0 and not banderaReloj):
+        timerReloj = timer.set_interval(1,actualizarHora)
+        banderaReloj = True
+        banderaAnimacionEstablecida = False
+      elif (RTC().datetime()[5]%5==0 and banderaReloj):
+        timer._delete(timerReloj)
+        banderaReloj = False
+        if (opcionSeleccionadaAzar==0):
+          opcionSeleccionadaAzar = random.randint(1,1)
+        if (opcionSeleccionadaAzar==1):
+          if (not banderaAnimacionEstablecida):
+            bandera()
+            banderaAnimacionEstablecida = True
+#         else:
+#           fuegosArtificiales()
+#     elif mes==12 or mes == 1:
+#       if (opcionSeleccionadaAzar==0):
+#         opcionSeleccionadaAzar = random(1,3)
+#     }
+#     if (opcionSeleccionadaAzar == 1)
+#     {
+#       if (!banderaAnimacionEstablecida)
+#       {
+#         bandera();
+#         banderaAnimacionEstablecida = true;
+#       }
+#     }
+#     else
+#       fuegosArtificiales();
+#   }
+#   else
+#     desplegarHora();
+# 
+#   // Esperar que pase 1 segundo
+#   while (segundo == segundoAnterior)
+#     segundo = second();
+#   segundoAnterior = segundo;
+# }
   except KeyboardInterrupt:
     banderaSalida = True
 
