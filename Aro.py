@@ -12,7 +12,7 @@
 # 3) Pasos para actualizarel sketch en el ESP32
 
 #    Requisitos: 1) Debe estar en donde está la aplicación el sketch ota.py;
-#                   2) En GitHub, repositorio Aro debe existir  un arhivo con nombre version.json con las lineas:
+#                2) En GitHub, repositorio Aro debe existir  un arhivo con nombre version.json con las lineas:
 #                   {
 #                     "version":2
 #                   }
