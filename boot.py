@@ -133,7 +133,7 @@ def actualizarSketch():
   print("*************************")
   print("ACTUALIZANDO SKETCH...")
   try:
-    ota_updater = OTAUpdater(SSID, PASSWD, firmware_url, "ProbarConexiones_OTA.py")
+    ota_updater = OTAUpdater(SSID, PASSWD, firmware_url, "boot.py")
     ota_updater.download_and_install_update_if_available()
   except:
     print("NO SE PUDO ACTUALIZAR EL SKETCH")
@@ -143,15 +143,6 @@ def actualizarSketch():
 #/ PROCESO   PROCESO   PROCESO   PROCESO   PROCESO   PROCESO   PROCESO        //
 #///////////////////////////////////////////////////////////////////////////////
 #seleccionarMejorRedWiFiDisponible()
-
-#HOLA
-for i in range(2):
-  pixels.fill((0,10,0))
-  pixels.write()
-  time.sleep_ms(250)
-  pixels.fill((0,0,0))
-  pixels.write()
-  time.sleep_ms(250)
 
 seleccionarMejorRedWiFiDisponible()
 print("Connecting to WiFi network '{}'".format(SSID))
@@ -170,14 +161,5 @@ pixels.fill((255,0,0))
 pixels.write()
 
 wifi.disconnect()
-
-#ADIOS
-for i in range(2):
-  pixels.fill((0,10,0))
-  pixels.write()
-  time.sleep_ms(250)
-  pixels.fill((0,0,0))
-  pixels.write()
-  time.sleep_ms(250)
 
 print("Programa terminado")
